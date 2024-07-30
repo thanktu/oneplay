@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="favicon.png" />
+    <link rel="icon" type="image/x-icon" href="icons/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Maps</title>
@@ -15,14 +15,26 @@
     />
   </head>
   <body>
-    <div id="map" class="map"></div>
+    <div id="map" class="map">
+      <div id="popupIcon"></div>
+    </div>
     <div id="info">&nbsp;</div>
 
-    <div style="margin-top: 10px">
-      <button id="zoom-out">Zoom out</button>
-      <button id="zoom-in">Zoom in</button>
+    <div id="popup" class="ol-popup">
+      <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+      <div id="popup-content"></div>
     </div>
-    <br />
+
+    <div style="margin-top: 0px">
+      <button class="btn btn-outline-primary" id="zoom-out">Zoom out</button>
+      <button class="btn btn-outline-primary" id="zoom-in">Zoom in</button>
+
+      <button class="btn btn-primary" style="margin-left: 30px" id="goToLotte">Go To Lotte</button>
+      <button class="btn btn-primary" id="goToMarriot">Go To Marriot</button>
+      <button class="btn btn-primary" id="goToIcon">Go To Icon</button>
+
+      <button class="btn btn-primary" id="goToMulty">Go All</button>
+    </div>
 
     <div>
       <span>Location</span>

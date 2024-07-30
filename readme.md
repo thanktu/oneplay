@@ -26,26 +26,26 @@ Then deploy the contents of the `dist` directory to your server. You can also ru
 - filtering object
 - grouping/zoning object
 - popup in map
-- tô màu
+- color..
 - add thêm thông tin
 - ..Layers handling, zoom in/out
 
 - https://openlayers.org/en/latest/examples/custom-circle-render.html ✅
+- https://openlayers.org/en/latest/examples/popup.html ✅
+- https://openlayers.org/en/latest/examples/icon.html ✅
 
 - https://openlayers.org/en/latest/examples/filter-points-webgl.html : Filter
 - https://openlayers.org/en/latest/examples/earthquake-clusters.html
 - https://openlayers.org/en/latest/examples/icon-negative.html -> icon to symbolize a point.
 - https://openlayers.org/en/latest/examples/cluster.html ->
 - https://openlayers.org/en/latest/examples/feature-animation.html
-- https://openlayers.org/en/latest/examples/custom-hit-detection-renderer.html
+
 - https://openlayers.org/en/latest/examples/clusters-dynamic.html
 - https://openlayers.org/en/latest/examples/kml-earthquakes.html
 - https://openlayers.org/en/latest/examples/vector-esri-edit.html
 - https://openlayers.org/en/latest/examples/flight-animation.html
-- https://openlayers.org/en/latest/examples/modify-icon.html
-- https://openlayers.org/en/latest/examples/icon.html
+
 - https://openlayers.org/en/latest/examples/overlay.html
-- https://openlayers.org/en/latest/examples/popup.html
 - https://openlayers.org/en/latest/examples/animation.html
 
 - https://openlayers.org/en/latest/examples/gpx.html ❌
@@ -64,3 +64,5 @@ Then deploy the contents of the `dist` directory to your server. You can also ru
 - https://openlayers.org/en/latest/examples/select-features.html
 - https://openlayers.org/en/latest/examples/utfgrid.html -> UTFGrid
 - https://openlayers.org/en/latest/examples/vector-layer.html
+- https://openlayers.org/en/latest/examples/modify-icon.html
+- https://openlayers.org/en/latest/examples/custom-hit-detection-renderer.html
