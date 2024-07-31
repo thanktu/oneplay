@@ -19,38 +19,41 @@ Then deploy the contents of the `dist` directory to your server. You can also ru
 
 # Key
 
-- OSM: OpenStreetMap
+- OSM: OpenStreetMap -> opensource
+- KML: Keyhole Markup Language -> là một ký hiệu XML để thể hiện chú thích địa lý và trực quan hóa trong bản đồ hai chiều và trình duyệt Earth ba chiều. KML được phát triển để sử dụng với Google Earth
 
 # Scope ✅ ❌
 
 - filtering object
 - grouping/zoning object
-- popup in map
-- color..
-- add thêm thông tin
-- ..Layers handling, zoom in/out
+
+- ..Layers handling, zoom in/out, popup in map, color, add more info, ...
+
+- https://openlayers.org/en/latest/examples/earthquake-clusters.html
+
+- https://openlayers.org/en/latest/examples/clusters-dynamic.html
+- https://openlayers.org/en/latest/examples/kml-earthquakes.html
+
+-
+- Nothing>>>>>>>>>
+- https://openlayers.org/en/latest/examples/cluster.html ->
+- https://openlayers.org/en/latest/examples/feature-animation.html
+
+---
 
 - https://openlayers.org/en/latest/examples/custom-circle-render.html ✅
 - https://openlayers.org/en/latest/examples/popup.html ✅
 - https://openlayers.org/en/latest/examples/icon.html ✅
-
-- https://openlayers.org/en/latest/examples/filter-points-webgl.html : Filter
-- https://openlayers.org/en/latest/examples/earthquake-clusters.html
-- https://openlayers.org/en/latest/examples/icon-negative.html -> icon to symbolize a point.
-- https://openlayers.org/en/latest/examples/cluster.html ->
-- https://openlayers.org/en/latest/examples/feature-animation.html
-
-- https://openlayers.org/en/latest/examples/clusters-dynamic.html
-- https://openlayers.org/en/latest/examples/kml-earthquakes.html
-- https://openlayers.org/en/latest/examples/vector-esri-edit.html
-- https://openlayers.org/en/latest/examples/flight-animation.html
-
-- https://openlayers.org/en/latest/examples/overlay.html
-- https://openlayers.org/en/latest/examples/animation.html
+- https://openlayers.org/en/latest/examples/animation.html ✅
+- https://openlayers.org/en/latest/examples/filter-points-webgl.html : Filter ✅
 
 - https://openlayers.org/en/latest/examples/gpx.html ❌
 - https://openlayers.org/en/latest/examples/wms-custom-proj.html
 - https://openlayers.org/en/latest/examples/wms-getlegendgraphic.html : Legend
+- https://openlayers.org/en/latest/examples/overlay.html
+- https://openlayers.org/en/latest/examples/flight-animation.html
+- https://openlayers.org/en/latest/examples/vector-esri-edit.html
+- https://openlayers.org/en/latest/examples/icon-negative.html -> icon to symbolize a point.
 
 <!-- Nore -->
 

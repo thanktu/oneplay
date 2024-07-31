@@ -6,6 +6,17 @@ body {
   height: 100%;
 }
 
+.boxLeft {
+  width: calc(100% - 300px);
+  float: right;
+}
+.boxRight {
+  width: 300px;
+  float: left;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
 .cls {
   display: block;
   clear: both;
@@ -13,6 +24,10 @@ body {
 }
 
 #map {
+  /* position: absolute;
+  top: 0;
+  bottom: 0; */
+  /* width: 100%; */
   width: 100%;
   height: 100vh;
   margin: auto;

@@ -1,139 +1,45 @@
 import "./style.css";
+import { _createCircle, _createMousePosition } from "./help";
 import { Map, View } from "ol";
-import { OSM, TileDebug, DataTile, TileWMS, StadiaMaps, OGCMapTile, Vector as VectorSource } from "ol/source";
+import { OSM, TileDebug, DataTile, TileWMS, StadiaMaps, OGCMapTile, Vector as VectorSource, Vector, Cluster } from "ol/source";
 import { fromLonLat, toLonLat } from "ol/proj";
 import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
-import { Icon, Style } from "ol/style";
+import { Icon, Style, Circle as CircleStyle, Fill, Stroke, Text } from "ol/style";
 import { Vector as VectorLayer, Tile as TileLayer } from "ol/layer";
 import { createStringXY, toStringHDMS } from "ol/coordinate";
 import { defaults as defaultControls, MousePosition } from "ol/control";
-import { Circle } from "ol/geom";
+import WebGLPointsLayer from "ol/layer/WebGLPoints";
 import Overlay from "ol/Overlay";
 import { Modify } from "ol/interaction";
 import ImageTile from "ol/source/ImageTile";
 import { easeIn, easeOut } from "ol/easing";
+import { Circle, LineString, Polygon } from "ol/geom";
+import GeoJSON from "ol/format/GeoJSON";
+import { createEmpty, extend, getHeight, getWidth } from "ol/extent";
 
 const SCALE_UNIT = 1;
+const SCALE_DETAIL = 16; // Level scale detail
 const DEBUG_MODE = false;
+const OVERVIEW_MODE = true;
 const MAP_TILER_KEY = "17YhaUehJVmGcqQaZ2up"; // "https://api.maptiler.com/maps/basic-v2/?key=17YhaUehJVmGcqQaZ2up#1.0/0.00000/0.00000";
 
 const MARRIOT_LOC = fromLonLat([105.783089061, 21.007448175]);
 const METRI_PART_LOC = fromLonLat([105.77148046, 21.007552187]);
 const ICON_LOC = fromLonLat([105.794633289, 21.00786928]);
 const LOTTE_LOC = fromLonLat([105.813080887, 21.076551416]);
+const FILTER_LOC = fromLonLat([105.735447973, 21.057766731]); // Area Show Data to Filter
+const CLUSTER_LOC = fromLonLat([16.340115111, 48.232346294]);
 
-// #region: Mouse Position
-const mousePositionControl = new MousePosition({
-  coordinateFormat: createStringXY(9),
-  projection: "EPSG:4326", // EPSG:4326 vs EPSG:3857
+const mousePositionControl = _createMousePosition(); // Mouse Position
 
-  // comment the following two lines to have the mouse position
-  // be placed within the map.
-  className: "custom-mouse-position",
-  target: document.getElementById("mouse-position"),
-});
+// #region Custom Circle Render
+const circleMarriotFeature = _createCircle(MARRIOT_LOC[0], MARRIOT_LOC[1], "20,45,220", 200);
+const circleMetriPartFeature = _createCircle(METRI_PART_LOC[0], METRI_PART_LOC[1], "225,0,0", 500);
+const circleLotteFeature = _createCircle(LOTTE_LOC[0], LOTTE_LOC[1], "0,0,0", 800);
 // #endregion
 
-// #region: Custom Circle Render
-const circleFeature1 = new Feature({
-  geometry: new Circle([MARRIOT_LOC[0], MARRIOT_LOC[1]], 200),
-});
-circleFeature1.setStyle(
-  new Style({
-    renderer(coordinates, state) {
-      const [[x, y], [x1, y1]] = coordinates;
-      const ctx = state.context;
-      const dx = x1 - x;
-      const dy = y1 - y;
-      const radius = Math.sqrt(dx * dx + dy * dy);
-
-      const innerRadius = 0;
-      const outerRadius = radius * 1.5;
-
-      const gradient = ctx.createRadialGradient(x, y, innerRadius, x, y, outerRadius);
-      gradient.addColorStop(0, "rgba(20,45,220,0)");
-      gradient.addColorStop(0.5, "rgba(20,45,220,0.2)");
-      gradient.addColorStop(1, "rgba(20,45,220,0.8)");
-
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.strokeStyle = "rgba(20,45,220,1)";
-      ctx.stroke();
-    },
-  })
-);
-
-const circleFeature2 = new Feature({
-  geometry: new Circle([METRI_PART_LOC[0], METRI_PART_LOC[1]], 500),
-});
-circleFeature2.setStyle(
-  new Style({
-    renderer(coordinates, state) {
-      const [[x, y], [x1, y1]] = coordinates;
-      const ctx = state.context;
-      const dx = x1 - x;
-      const dy = y1 - y;
-      const radius = Math.sqrt(dx * dx + dy * dy);
-
-      const innerRadius = 0;
-      const outerRadius = radius * 1.5;
-
-      const gradient = ctx.createRadialGradient(x, y, innerRadius, x, y, outerRadius);
-      gradient.addColorStop(0, "rgba(225,0,0,0)");
-      gradient.addColorStop(0.5, "rgba(225,0,0,0.2)");
-      gradient.addColorStop(1, "rgba(225,0,0,0.8)");
-
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.strokeStyle = "rgba(225,0,0,1)";
-      ctx.stroke();
-    },
-  })
-);
-
-const circleFeature3 = new Feature({
-  geometry: new Circle([LOTTE_LOC[0], LOTTE_LOC[1]], 800),
-});
-circleFeature3.setStyle(
-  new Style({
-    renderer(coordinates, state) {
-      const [[x, y], [x1, y1]] = coordinates;
-      const ctx = state.context;
-      const dx = x1 - x;
-      const dy = y1 - y;
-      const radius = Math.sqrt(dx * dx + dy * dy);
-
-      const innerRadius = 0;
-      const outerRadius = radius * 1.5;
-
-      const gradient = ctx.createRadialGradient(x, y, innerRadius, x, y, outerRadius);
-      gradient.addColorStop(0, "rgba(0,0,0,0)");
-      gradient.addColorStop(0.5, "rgba(0,0,0,0.2)");
-      gradient.addColorStop(1, "rgba(0,0,0,0.5)");
-
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.strokeStyle = "rgba(0,0,0,.7)";
-      ctx.stroke();
-    },
-  })
-);
-// #endregion
-
-// #region: Elements that make up the popup.
+// #region Elements that make up the popup.
 const container = document.getElementById("popup");
 const content = document.getElementById("popup-content");
 const closer = document.getElementById("popup-closer");
@@ -175,18 +81,307 @@ const iconStyle = new Style({
 
 iconFeature.setStyle(iconStyle);
 
-const vectorSource = new VectorSource({
+const iconVectorSource = new VectorSource({
   features: [iconFeature],
 });
 
-const vectorLayer = new VectorLayer({
-  source: vectorSource,
+const iconLayer = new VectorLayer({
+  source: iconVectorSource,
 });
 // #endregion
 
+// #region Filter
+const vectorSourceWebGL = new Vector({
+  attributions: "NASA",
+});
+
+const oldColor = "#db3db7"; // "rgba(242,56,22,0.8)";
+const newColor = "green"; // "#ffe52c";
+const period = 10; // Animation period in seconds
+
+//
+const animRatio = [
+  "^",
+  [
+    "/",
+    [
+      "%",
+      [
+        "+",
+        ["time"],
+        ["interpolate", ["linear"], ["get", "year"], 1850, 0, 2015, period], //
+      ],
+      period,
+    ],
+    period,
+  ],
+  0.5,
+];
+
+const filterStyle = {
+  variables: {
+    minYear: 1850,
+    maxYear: 2015,
+  },
+  filter: ["between", ["get", "year"], ["var", "minYear"], ["var", "maxYear"]],
+  "circle-radius": ["*", ["interpolate", ["linear"], ["get", "mass"], 0, 4, 200000, 13], ["-", 1.75, ["*", animRatio, 0.75]]],
+  "circle-fill-color": ["interpolate", ["linear"], animRatio, 0, newColor, 1, oldColor],
+  "circle-opacity": ["-", 1.0, ["*", animRatio, 0.75]],
+};
+
+// handle input values & events
+const minYearInput = document.getElementById("min-year");
+const maxYearInput = document.getElementById("max-year");
+
+function updateStatusText() {
+  const div = document.getElementById("status");
+  div.querySelector("span.min-year").textContent = minYearInput.value;
+  div.querySelector("span.max-year").textContent = maxYearInput.value;
+}
+
+minYearInput.addEventListener("input", function () {
+  filterStyle.variables.minYear = parseInt(minYearInput.value);
+  updateStatusText();
+});
+maxYearInput.addEventListener("input", function () {
+  filterStyle.variables.maxYear = parseInt(maxYearInput.value);
+  updateStatusText();
+});
+updateStatusText();
+
+// load Filter Data;
+const client = new XMLHttpRequest();
+client.open("GET", "data/filter_data.csv");
+client.onload = function () {
+  const csv = client.responseText;
+  const features = [];
+
+  let prevIndex = csv.indexOf("\n") + 1; // scan past the header line
+
+  let curIndex;
+  while ((curIndex = csv.indexOf("\n", prevIndex)) != -1) {
+    const line = csv.substr(prevIndex, curIndex - prevIndex).split(",");
+
+    prevIndex = curIndex + 1;
+
+    const coords = fromLonLat([parseFloat(line[4]), parseFloat(line[3])]);
+    if (isNaN(coords[0]) || isNaN(coords[1])) {
+      continue;
+    }
+
+    features.push(
+      new Feature({
+        mass: parseFloat(line[1]) || 0,
+        year: parseInt(line[2]) || 0,
+        geometry: new Point(coords),
+      })
+    );
+  }
+
+  vectorSourceWebGL.addFeatures(features);
+};
+client.send();
+// #endregion
+
+// #region Cluster
+const circleDistanceMultiplier = 1;
+const circleFootSeparation = 28;
+const circleStartAngle = Math.PI / 2;
+
+const convexHullFill = new Fill({
+  color: "rgba(255, 153, 0, 0.4)",
+});
+const convexHullStroke = new Stroke({
+  color: "rgba(204, 85, 0, 1)",
+  width: 1.5,
+});
+const outerCircleFill = new Fill({
+  color: "rgba(255, 153, 102, 0.3)",
+});
+const innerCircleFill = new Fill({
+  color: "rgba(255, 165, 0, 0.7)",
+});
+const textFill = new Fill({
+  color: "#fff",
+});
+const textStroke = new Stroke({
+  color: "rgba(0, 0, 0, 0.6)",
+  width: 3,
+});
+const innerCircle = new CircleStyle({
+  radius: 14,
+  fill: innerCircleFill,
+});
+const outerCircle = new CircleStyle({
+  radius: 20,
+  fill: outerCircleFill,
+});
+const darkIcon = new Icon({
+  src: "icons/emoticon-cool.svg",
+});
+const lightIcon = new Icon({
+  src: "icons/emoticon-cool-outline.svg",
+});
+
+/**
+ * Single feature style, users for clusters with 1 feature and cluster circles.
+ * @param {Feature} clusterMember A feature from a cluster.
+ * @return {Style} An icon style for the cluster member's location.
+ */
+function clusterMemberStyle(clusterMember) {
+  return new Style({
+    geometry: clusterMember.getGeometry(),
+    image: clusterMember.get("LEISTUNG") > 5 ? darkIcon : lightIcon,
+  });
+}
+
+let clickFeature, clickResolution;
+/**
+ * Style for clusters with features that are too close to each other, activated on click.
+ * @param {Feature} cluster A cluster with overlapping members.
+ * @param {number} resolution The current view resolution.
+ * @return {Style|null} A style to render an expanded view of the cluster members.
+ */
+function clusterCircleStyle(cluster, resolution) {
+  if (cluster !== clickFeature || resolution !== clickResolution) {
+    return null;
+  }
+  const clusterMembers = cluster.get("features");
+  const centerCoordinates = cluster.getGeometry().getCoordinates();
+  return generatePointsCircle(clusterMembers.length, cluster.getGeometry().getCoordinates(), resolution).reduce((styles, coordinates, i) => {
+    const point = new Point(coordinates);
+    const line = new LineString([centerCoordinates, coordinates]);
+    styles.unshift(
+      new Style({
+        geometry: line,
+        stroke: convexHullStroke,
+      })
+    );
+    styles.push(
+      clusterMemberStyle(
+        new Feature({
+          ...clusterMembers[i].getProperties(),
+          geometry: point,
+        })
+      )
+    );
+    return styles;
+  }, []);
+}
+
+/**
+ * From
+ * https://github.com/Leaflet/Leaflet.markercluster/blob/31360f2/src/MarkerCluster.Spiderfier.js#L55-L72
+ * Arranges points in a circle around the cluster center, with a line pointing from the center to
+ * each point.
+ * @param {number} count Number of cluster members.
+ * @param {Array<number>} clusterCenter Center coordinate of the cluster.
+ * @param {number} resolution Current view resolution.
+ * @return {Array<Array<number>>} An array of coordinates representing the cluster members.
+ */
+function generatePointsCircle(count, clusterCenter, resolution) {
+  const circumference = circleDistanceMultiplier * circleFootSeparation * (2 + count);
+  let legLength = circumference / (Math.PI * 2); //radius from circumference
+  const angleStep = (Math.PI * 2) / count;
+  const res = [];
+  let angle;
+
+  legLength = Math.max(legLength, 35) * resolution; // Minimum distance to get outside the cluster icon.
+
+  for (let i = 0; i < count; ++i) {
+    // Clockwise, like spiral.
+    angle = circleStartAngle + i * angleStep;
+    res.push([clusterCenter[0] + legLength * Math.cos(angle), clusterCenter[1] + legLength * Math.sin(angle)]);
+  }
+
+  return res;
+}
+
+let hoverFeature;
+/**
+ * Style for convex hulls of clusters, activated on hover.
+ * @param {Feature} cluster The cluster feature.
+ * @return {Style|null} Polygon style for the convex hull of the cluster.
+ */
+function clusterHullStyle(cluster) {
+  if (cluster !== hoverFeature) {
+    return null;
+  }
+  const originalFeatures = cluster.get("features");
+  const points = originalFeatures.map((feature) => feature.getGeometry().getCoordinates());
+  return new Style({
+    geometry: new Polygon([monotoneChainConvexHull(points)]),
+    fill: convexHullFill,
+    stroke: convexHullStroke,
+  });
+}
+
+function clusterStyle(feature) {
+  const size = feature.get("features").length;
+  if (size > 1) {
+    return [
+      new Style({
+        image: outerCircle,
+      }),
+      new Style({
+        image: innerCircle,
+        text: new Text({
+          text: size.toString(),
+          fill: textFill,
+          stroke: textStroke,
+        }),
+      }),
+    ];
+  }
+  const originalFeature = feature.get("features")[0];
+  return clusterMemberStyle(originalFeature);
+}
+
+const vectorSource = new VectorSource({
+  format: new GeoJSON(),
+  url: "data/dynamic_cluster.json",
+});
+
+const clusterSource = new Cluster({
+  attributions: 'Data: <a href="https://www.data.gv.at/auftritte/?organisation=stadt-wien">Stadt Wien</a>',
+  distance: 35,
+  source: vectorSource,
+});
+
+// Layer displaying the convex hull of the hovered cluster.
+const clusterHulls = new VectorLayer({
+  source: clusterSource,
+  style: clusterHullStyle,
+});
+
+// Layer displaying the clusters and individual features.
+const clusters = new VectorLayer({
+  source: clusterSource,
+  style: clusterStyle,
+});
+
+// Layer displaying the expanded view of overlapping cluster members.
+const clusterCircles = new VectorLayer({
+  source: clusterSource,
+  style: clusterCircleStyle,
+});
+
+// #endregion
+
+// =========================================== MAP Area ===========================================
+// const view = OVERVIEW_MODE
+//   ? new View({
+//       center: [0, 0], // --> Default
+//       zoom: 2,
+//     })
+//   : new View({
+//       center: [MARRIOT_LOC[0], MARRIOT_LOC[1]],
+//       zoom: SCALE_DETAIL, // -> Custom zoom level
+//     });
+
 const view = new View({
-  center: [MARRIOT_LOC[0], MARRIOT_LOC[1]],
-  zoom: 16,
+  center: [CLUSTER_LOC[0], CLUSTER_LOC[1]], // --> Default
+  zoom: 11,
 });
 
 // MAP
@@ -199,26 +394,38 @@ const map = new Map({
     new TileLayer({
       source: new OSM(),
       visible: true,
-      // preload: Infinity, //  preload: 0, // default value
+      preload: Infinity, //  preload: 0, // default value || Infinity
     }),
 
     new VectorLayer({
       source: new VectorSource({
-        features: [circleFeature1],
+        features: [circleMarriotFeature],
       }),
     }),
     new VectorLayer({
       source: new VectorSource({
-        features: [circleFeature2],
+        features: [circleMetriPartFeature],
       }),
     }),
     new VectorLayer({
       source: new VectorSource({
-        features: [circleFeature3],
+        features: [circleLotteFeature],
       }),
     }),
 
-    vectorLayer,
+    iconLayer, // Icon Map Layer
+
+    // Filter Layer
+    new WebGLPointsLayer({
+      style: filterStyle,
+      source: vectorSourceWebGL,
+      disableHitDetection: false,
+    }),
+
+    // Cluster
+    clusterHulls,
+    clusters,
+    clusterCircles,
 
     // Layer Debug
     ...(DEBUG_MODE
@@ -231,16 +438,9 @@ const map = new Map({
   ],
 
   view,
-  // view: new View({
-  //   // center: [0, 0], // --> default
-  //   // center: MARRIOT_LOC, // custom localtion default
-  //   // zoom: 15,
-
-  //   center: [MARRIOT_LOC[0], MARRIOT_LOC[1]],
-  //   zoom: 16,
-  // }),
 });
 
+// =========================================== Handle ===========================================
 // #region Zoom In, Zoom Out
 document.getElementById("zoom-out").onclick = function () {
   const view = map.getView();
@@ -275,7 +475,7 @@ map.on("singleclick", function (evt) {
 
   content.innerHTML = `
     <p style="font-weight: 700">
-      Click Location: 
+      Click Location:
     </p>
     <code> ${hdms}</code>
 
@@ -304,30 +504,31 @@ function disposePopover() {
     popover = undefined;
   }
 }
+
 // display popup on click
-map.on("click", function (evt) {
-  const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
-    return feature;
-  });
-  disposePopover();
-  if (!feature) {
-    return;
-  }
-  popup.setPosition(evt.coordinate);
-  popover = new bootstrap.Popover(element, {
-    placement: "top",
-    html: true,
-    content: feature.get("name"),
-  });
-  popover.show();
-});
+// map.on("click", function (evt) {
+//   const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+//     return feature;
+//   });
+//   disposePopover();
+//   if (!feature) {
+//     return;
+//   }
+//   popup.setPosition(evt.coordinate);
+//   popover = new bootstrap.Popover(element, {
+//     placement: "top",
+//     html: true,
+//     content: feature.get("name"),
+//   });
+//   popover.show();
+// });
 
 // change mouse cursor when over marker
-map.on("pointermove", function (e) {
-  const pixel = map.getEventPixel(e.originalEvent);
-  const hit = map.hasFeatureAtPixel(pixel);
-  map.getTarget().style.cursor = hit ? "pointer" : "";
-});
+// map.on("pointermove", function (e) {
+//   const pixel = map.getEventPixel(e.originalEvent);
+//   const hit = map.hasFeatureAtPixel(pixel);
+//   map.getTarget().style.cursor = hit ? "pointer" : "";
+// });
 // Close the popup when the map is moved
 map.on("movestart", disposePopover);
 // #endregion
@@ -337,7 +538,10 @@ function onClick(id, callback) {
   document.getElementById(id).addEventListener("click", callback);
 }
 
-function flyTo(location, done) {
+function flyTo(location, scale = SCALE_DETAIL, done) {
+  const view = map.getView();
+  view.setZoom(scale);
+
   const duration = 2000;
   const zoom = view.getZoom();
   let parts = 2;
@@ -373,18 +577,25 @@ function flyTo(location, done) {
 }
 
 onClick("goToLotte", function () {
-  flyTo(LOTTE_LOC, function () {});
+  flyTo(LOTTE_LOC, SCALE_DETAIL, function () {});
 });
 
 onClick("goToMarriot", function () {
-  flyTo(MARRIOT_LOC, function () {});
+  flyTo(MARRIOT_LOC, SCALE_DETAIL, function () {});
 });
 
 onClick("goToIcon", function () {
-  flyTo(ICON_LOC, function () {});
+  flyTo(ICON_LOC, SCALE_DETAIL, function () {});
 });
 
-function tour() {
+onClick("goToFilterArea", function () {
+  flyTo(FILTER_LOC, 2, function () {});
+});
+
+onClick("goToMulty", () => {
+  const view = map.getView();
+  view.setZoom(SCALE_DETAIL);
+
   const locations = [LOTTE_LOC, MARRIOT_LOC, ICON_LOC, LOTTE_LOC, MARRIOT_LOC, ICON_LOC];
   let index = -1;
   function next(more) {
@@ -393,7 +604,7 @@ function tour() {
       if (index < locations.length) {
         const delay = index === 0 ? 0 : 750;
         setTimeout(function () {
-          flyTo(locations[index], next);
+          flyTo(locations[index], SCALE_DETAIL, next);
         }, delay);
       } else {
         alert("Complete :v");
@@ -403,7 +614,70 @@ function tour() {
     }
   }
   next(true);
-}
+});
+// #endregion
 
-onClick("goToMulty", tour);
+// #region Animate the map
+function animate() {
+  map.render();
+  window.requestAnimationFrame(animate);
+}
+animate();
+// #endregion
+
+// #region Cluster
+map.on("pointermove", (event) => {
+  clusters.getFeatures(event.pixel).then((features) => {
+    if (features[0] !== hoverFeature) {
+      // Display the convex hull on hover.
+      hoverFeature = features[0];
+      clusterHulls.setStyle(clusterHullStyle);
+      // Change the cursor style to indicate that the cluster is clickable.
+      map.getTargetElement().style.cursor = hoverFeature && hoverFeature.get("features").length > 1 ? "pointer" : "";
+    }
+  });
+
+  const pixel = map.getEventPixel(event.originalEvent);
+  const hit = map.hasFeatureAtPixel(pixel);
+  map.getTarget().style.cursor = hit ? "pointer" : "";
+});
+
+map.on("click", (event) => {
+  clusters.getFeatures(event.pixel).then((features) => {
+    if (features.length > 0) {
+      const clusterMembers = features[0].get("features");
+      if (clusterMembers.length > 1) {
+        // Calculate the extent of the cluster members.
+        const extent = createEmpty();
+        clusterMembers.forEach((feature) => extend(extent, feature.getGeometry().getExtent()));
+        const view = map.getView();
+        const resolution = map.getView().getResolution();
+        if (view.getZoom() === view.getMaxZoom() || (getWidth(extent) < resolution && getHeight(extent) < resolution)) {
+          // Show an expanded view of the cluster members.
+          clickFeature = features[0];
+          clickResolution = resolution;
+          clusterCircles.setStyle(clusterCircleStyle);
+        } else {
+          // Zoom to the extent of the cluster members.
+          view.fit(extent, { duration: 500, padding: [50, 50, 50, 50] });
+        }
+      }
+    }
+  });
+
+  const feature = map.forEachFeatureAtPixel(event.pixel, function (feature) {
+    return feature;
+  });
+  disposePopover();
+  if (!feature) {
+    return;
+  }
+  popup.setPosition(event.coordinate);
+  popover = new bootstrap.Popover(element, {
+    placement: "top",
+    html: true,
+    content: feature.get("name"),
+  });
+  popover.show();
+});
 // #endregion

@@ -15,30 +15,67 @@
     />
   </head>
   <body>
-    <div id="map" class="map">
-      <div id="popupIcon"></div>
-    </div>
-    <div id="info">&nbsp;</div>
-
-    <div id="popup" class="ol-popup">
-      <a href="#" id="popup-closer" class="ol-popup-closer"></a>
-      <div id="popup-content"></div>
-    </div>
-
-    <div style="margin-top: 0px">
-      <button class="btn btn-outline-primary" id="zoom-out">Zoom out</button>
-      <button class="btn btn-outline-primary" id="zoom-in">Zoom in</button>
-
-      <button class="btn btn-primary" style="margin-left: 30px" id="goToLotte">Go To Lotte</button>
-      <button class="btn btn-primary" id="goToMarriot">Go To Marriot</button>
-      <button class="btn btn-primary" id="goToIcon">Go To Icon</button>
-
-      <button class="btn btn-primary" id="goToMulty">Go All</button>
-    </div>
-
     <div>
-      <span>Location</span>
-      <span id="mouse-position"> </span>
+      <div style="width: calc(100% - 300px); float: right">
+        <div id="map" class="map">
+          <div id="popupIcon"></div>
+
+          <div id="popup" class="ol-popup">
+            <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+            <div id="popup-content"></div>
+          </div>
+
+          
+        </div>
+      </div>
+
+      <div style="width: 300px; float: left; padding: 10px">
+        <div>
+          <!-- Btn Control  -->
+          <div>
+            <div class="cls"></div>
+            <button class="btn btn-outline-primary btn-sm" id="zoom-out">Zoom out</button>
+            <button class="btn btn-outline-primary btn-sm" id="zoom-in">Zoom in</button>
+            <div class="cls"></div>
+
+            <button class="btn btn-primary btn-sm" id="goToLotte">GoTo Lotte</button>
+            <button class="btn btn-primary btn-sm" id="goToMarriot">GoTo Marriot</button>
+            <button class="btn btn-primary btn-sm" id="goToIcon">Go Icon</button>
+            <div class="cls"></div>
+            <button type="button" class="btn btn-success btn-sm btn-block" id="goToMulty">Go All</button>
+
+            
+          </div>
+
+          <!-- Filter -->
+          <div class="cls">
+            <hr />
+            <div class="cls"></div>
+            <button type="button" class="btn btn-primary btn-sm btn-block" id="goToFilterArea">Filter Area</button>
+            <div class="cls"></div>
+
+            <form>
+              <div id="status">
+                <h4>Filter:</h1>
+                <span class="min-year"></span> and <span class="max-year"></span>
+              </div>
+
+              <label for="min-year">Minimum year:</label>
+              <input id="min-year" type="range" min="1850" max="2015" step="1" value="1850" />
+
+              <label for="max-year">Maximum year:</label>
+              <input id="max-year" type="range" min="1850" max="2015" step="1" value="2015" />
+            </form>
+          </div>
+
+          <!-- Info -->
+          <div class="cls">
+            <hr />
+            <span>Location</span>
+            <span id="mouse-position"> </span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script
@@ -46,6 +83,9 @@
       integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
       crossorigin="anonymous"
     ></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/monotone-chain-convex-hull@1.0.0/lib/index.js"></script>
+    
     <script type="module" src="./main.js"></script>
   </body>
 </html>

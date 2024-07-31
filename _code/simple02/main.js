@@ -1,4 +1,5 @@
 import "./style.css";
+import { _createCircle, _createMousePosition } from "./help";
 import { Map, View } from "ol";
 import { OSM, TileDebug, DataTile, TileWMS, StadiaMaps, OGCMapTile, Vector as VectorSource } from "ol/source";
 import { fromLonLat, toLonLat } from "ol/proj";
@@ -23,114 +24,13 @@ const METRI_PART_LOC = fromLonLat([105.77148046, 21.007552187]);
 const ICON_LOC = fromLonLat([105.794633289, 21.00786928]);
 const LOTTE_LOC = fromLonLat([105.813080887, 21.076551416]);
 
-// #region: Mouse Position
-const mousePositionControl = new MousePosition({
-  coordinateFormat: createStringXY(9),
-  projection: "EPSG:4326", // EPSG:4326 vs EPSG:3857
-
-  // comment the following two lines to have the mouse position
-  // be placed within the map.
-  className: "custom-mouse-position",
-  target: document.getElementById("mouse-position"),
-});
-// #endregion
+//  Mouse Position
+const mousePositionControl = _createMousePosition();
 
 // #region: Custom Circle Render
-const circleFeature1 = new Feature({
-  geometry: new Circle([MARRIOT_LOC[0], MARRIOT_LOC[1]], 200),
-});
-circleFeature1.setStyle(
-  new Style({
-    renderer(coordinates, state) {
-      const [[x, y], [x1, y1]] = coordinates;
-      const ctx = state.context;
-      const dx = x1 - x;
-      const dy = y1 - y;
-      const radius = Math.sqrt(dx * dx + dy * dy);
-
-      const innerRadius = 0;
-      const outerRadius = radius * 1.5;
-
-      const gradient = ctx.createRadialGradient(x, y, innerRadius, x, y, outerRadius);
-      gradient.addColorStop(0, "rgba(20,45,220,0)");
-      gradient.addColorStop(0.5, "rgba(20,45,220,0.2)");
-      gradient.addColorStop(1, "rgba(20,45,220,0.8)");
-
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.strokeStyle = "rgba(20,45,220,1)";
-      ctx.stroke();
-    },
-  })
-);
-
-const circleFeature2 = new Feature({
-  geometry: new Circle([METRI_PART_LOC[0], METRI_PART_LOC[1]], 500),
-});
-circleFeature2.setStyle(
-  new Style({
-    renderer(coordinates, state) {
-      const [[x, y], [x1, y1]] = coordinates;
-      const ctx = state.context;
-      const dx = x1 - x;
-      const dy = y1 - y;
-      const radius = Math.sqrt(dx * dx + dy * dy);
-
-      const innerRadius = 0;
-      const outerRadius = radius * 1.5;
-
-      const gradient = ctx.createRadialGradient(x, y, innerRadius, x, y, outerRadius);
-      gradient.addColorStop(0, "rgba(225,0,0,0)");
-      gradient.addColorStop(0.5, "rgba(225,0,0,0.2)");
-      gradient.addColorStop(1, "rgba(225,0,0,0.8)");
-
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.strokeStyle = "rgba(225,0,0,1)";
-      ctx.stroke();
-    },
-  })
-);
-
-const circleFeature3 = new Feature({
-  geometry: new Circle([LOTTE_LOC[0], LOTTE_LOC[1]], 800),
-});
-circleFeature3.setStyle(
-  new Style({
-    renderer(coordinates, state) {
-      const [[x, y], [x1, y1]] = coordinates;
-      const ctx = state.context;
-      const dx = x1 - x;
-      const dy = y1 - y;
-      const radius = Math.sqrt(dx * dx + dy * dy);
-
-      const innerRadius = 0;
-      const outerRadius = radius * 1.5;
-
-      const gradient = ctx.createRadialGradient(x, y, innerRadius, x, y, outerRadius);
-      gradient.addColorStop(0, "rgba(0,0,0,0)");
-      gradient.addColorStop(0.5, "rgba(0,0,0,0.2)");
-      gradient.addColorStop(1, "rgba(0,0,0,0.5)");
-
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-
-      ctx.arc(x, y, radius, 0, 2 * Math.PI, true);
-      ctx.strokeStyle = "rgba(0,0,0,.7)";
-      ctx.stroke();
-    },
-  })
-);
+const circleFeature1 = _createCircle(MARRIOT_LOC[0], MARRIOT_LOC[1], "20,45,220", 200);
+const circleFeature2 = _createCircle(METRI_PART_LOC[0], METRI_PART_LOC[1], "225,0,0", 500);
+const circleFeature3 = _createCircle(LOTTE_LOC[0], LOTTE_LOC[1], "0,0,0", 800);
 // #endregion
 
 // #region: Elements that make up the popup.
@@ -372,18 +272,6 @@ function flyTo(location, done) {
   );
 }
 
-onClick("goToLotte", function () {
-  flyTo(LOTTE_LOC, function () {});
-});
-
-onClick("goToMarriot", function () {
-  flyTo(MARRIOT_LOC, function () {});
-});
-
-onClick("goToIcon", function () {
-  flyTo(ICON_LOC, function () {});
-});
-
 function tour() {
   const locations = [LOTTE_LOC, MARRIOT_LOC, ICON_LOC, LOTTE_LOC, MARRIOT_LOC, ICON_LOC];
   let index = -1;
@@ -404,6 +292,18 @@ function tour() {
   }
   next(true);
 }
+
+onClick("goToLotte", function () {
+  flyTo(LOTTE_LOC, function () {});
+});
+
+onClick("goToMarriot", function () {
+  flyTo(MARRIOT_LOC, function () {});
+});
+
+onClick("goToIcon", function () {
+  flyTo(ICON_LOC, function () {});
+});
 
 onClick("goToMulty", tour);
 // #endregion
