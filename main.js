@@ -3,17 +3,15 @@ import { _createCircle, _createMousePosition } from "./help";
 import { Map, View } from "ol";
 import { OSM, TileDebug, DataTile, TileWMS, StadiaMaps, OGCMapTile, Vector as VectorSource, Vector, Cluster } from "ol/source";
 import { fromLonLat, toLonLat } from "ol/proj";
+import KML from "ol/format/KML.js";
 import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
 import { Icon, Style, Circle as CircleStyle, Fill, Stroke, Text } from "ol/style";
 import { Vector as VectorLayer, Tile as TileLayer } from "ol/layer";
 import { createStringXY, toStringHDMS } from "ol/coordinate";
-import { defaults as defaultControls, MousePosition } from "ol/control";
+import { defaults as defaultControls } from "ol/control";
 import WebGLPointsLayer from "ol/layer/WebGLPoints";
 import Overlay from "ol/Overlay";
-import { Modify } from "ol/interaction";
-import ImageTile from "ol/source/ImageTile";
-import { easeIn, easeOut } from "ol/easing";
 import { Circle, LineString, Polygon } from "ol/geom";
 import GeoJSON from "ol/format/GeoJSON";
 import { createEmpty, extend, getHeight, getWidth } from "ol/extent";
@@ -21,7 +19,7 @@ import { createEmpty, extend, getHeight, getWidth } from "ol/extent";
 const SCALE_UNIT = 1;
 const SCALE_DETAIL = 16; // Level scale detail
 const DEBUG_MODE = false;
-const OVERVIEW_MODE = true;
+const CLICK_SHOW_POPUP = false;
 const MAP_TILER_KEY = "17YhaUehJVmGcqQaZ2up"; // "https://api.maptiler.com/maps/basic-v2/?key=17YhaUehJVmGcqQaZ2up#1.0/0.00000/0.00000";
 
 const MARRIOT_LOC = fromLonLat([105.783089061, 21.007448175]);
@@ -85,9 +83,6 @@ const iconVectorSource = new VectorSource({
   features: [iconFeature],
 });
 
-const iconLayer = new VectorLayer({
-  source: iconVectorSource,
-});
 // #endregion
 
 // #region Filter
@@ -99,7 +94,6 @@ const oldColor = "#db3db7"; // "rgba(242,56,22,0.8)";
 const newColor = "green"; // "#ffe52c";
 const period = 10; // Animation period in seconds
 
-//
 const animRatio = [
   "^",
   [
@@ -123,10 +117,14 @@ const filterStyle = {
     minYear: 1850,
     maxYear: 2015,
   },
-  filter: ["between", ["get", "year"], ["var", "minYear"], ["var", "maxYear"]],
-  "circle-radius": ["*", ["interpolate", ["linear"], ["get", "mass"], 0, 4, 200000, 13], ["-", 1.75, ["*", animRatio, 0.75]]],
+  filter: ["between", ["get", "year"], ["var", "minYear"], ["var", "maxYear"]], //
+  "circle-radius": [
+    "*",
+    ["interpolate", ["linear"], ["get", "mass"], 0, 4, 200000, 13], //
+    ["-", 1.75, ["*", animRatio, 0.75]],
+  ],
   "circle-fill-color": ["interpolate", ["linear"], animRatio, 0, newColor, 1, oldColor],
-  "circle-opacity": ["-", 1.0, ["*", animRatio, 0.75]],
+  "circle-opacity": ["-", 1.0, ["*", animRatio, 0.75]], //
 };
 
 // handle input values & events
@@ -183,23 +181,23 @@ client.onload = function () {
 client.send();
 // #endregion
 
-// #region Cluster
+// #region Cluster + Group + Zooms
 const circleDistanceMultiplier = 1;
 const circleFootSeparation = 28;
 const circleStartAngle = Math.PI / 2;
 
 const convexHullFill = new Fill({
-  color: "rgba(255, 153, 0, 0.4)",
+  color: "rgba(85, 13, 0, 0.4)",
 });
 const convexHullStroke = new Stroke({
-  color: "rgba(204, 85, 0, 1)",
+  color: "rgba(24, 85, 0, 1)",
   width: 1.5,
 });
 const outerCircleFill = new Fill({
-  color: "rgba(255, 153, 102, 0.3)",
+  color: "rgba(85, 13, 102, 0.3)",
 });
 const innerCircleFill = new Fill({
-  color: "rgba(255, 165, 0, 0.7)",
+  color: "rgba(85, 15, 0, 0.7)",
 });
 const textFill = new Fill({
   color: "#fff",
@@ -223,11 +221,8 @@ const lightIcon = new Icon({
   src: "icons/emoticon-cool-outline.svg",
 });
 
-/**
- * Single feature style, users for clusters with 1 feature and cluster circles.
- * @param {Feature} clusterMember A feature from a cluster.
- * @return {Style} An icon style for the cluster member's location.
- */
+// Single feature style, users for clusters with 1 feature and cluster circles.
+// Kiểu tính năng đơn, người dùng cho các cụm có 1 tính năng và vòng tròn cụm
 function clusterMemberStyle(clusterMember) {
   return new Style({
     geometry: clusterMember.getGeometry(),
@@ -236,12 +231,8 @@ function clusterMemberStyle(clusterMember) {
 }
 
 let clickFeature, clickResolution;
-/**
- * Style for clusters with features that are too close to each other, activated on click.
- * @param {Feature} cluster A cluster with overlapping members.
- * @param {number} resolution The current view resolution.
- * @return {Style|null} A style to render an expanded view of the cluster members.
- */
+//  Style for clusters with features that are too close to each other, activated on click.
+// Kiểu cho các cụm có tính năng quá gần nhau, được kích hoạt khi nhấp chuột.
 function clusterCircleStyle(cluster, resolution) {
   if (cluster !== clickFeature || resolution !== clickResolution) {
     return null;
@@ -269,16 +260,9 @@ function clusterCircleStyle(cluster, resolution) {
   }, []);
 }
 
-/**
- * From
- * https://github.com/Leaflet/Leaflet.markercluster/blob/31360f2/src/MarkerCluster.Spiderfier.js#L55-L72
- * Arranges points in a circle around the cluster center, with a line pointing from the center to
- * each point.
- * @param {number} count Number of cluster members.
- * @param {Array<number>} clusterCenter Center coordinate of the cluster.
- * @param {number} resolution Current view resolution.
- * @return {Array<Array<number>>} An array of coordinates representing the cluster members.
- */
+// https://github.com/Leaflet/Leaflet.markercluster/blob/31360f2/src/MarkerCluster.Spiderfier.js#L55-L72
+// Arranges points in a circle around the cluster center, with a line pointing from the center to each point.
+// Sắp xếp các điểm thành một vòng tròn quanh tâm cụm, với một đường thẳng hướng từ tâm đến mỗi điểm.
 function generatePointsCircle(count, clusterCenter, resolution) {
   const circumference = circleDistanceMultiplier * circleFootSeparation * (2 + count);
   let legLength = circumference / (Math.PI * 2); //radius from circumference
@@ -298,11 +282,8 @@ function generatePointsCircle(count, clusterCenter, resolution) {
 }
 
 let hoverFeature;
-/**
- * Style for convex hulls of clusters, activated on hover.
- * @param {Feature} cluster The cluster feature.
- * @return {Style|null} Polygon style for the convex hull of the cluster.
- */
+// Style for convex hulls of clusters, activated on hover.
+// Kiểu cho các thân lồi của cụm, được kích hoạt khi di chuột.
 function clusterHullStyle(cluster) {
   if (cluster !== hoverFeature) {
     return null;
@@ -365,26 +346,9 @@ const clusterCircles = new VectorLayer({
   source: clusterSource,
   style: clusterCircleStyle,
 });
-
 // #endregion
 
-// =========================================== MAP Area ===========================================
-// const view = OVERVIEW_MODE
-//   ? new View({
-//       center: [0, 0], // --> Default
-//       zoom: 2,
-//     })
-//   : new View({
-//       center: [MARRIOT_LOC[0], MARRIOT_LOC[1]],
-//       zoom: SCALE_DETAIL, // -> Custom zoom level
-//     });
-
-const view = new View({
-  center: [CLUSTER_LOC[0], CLUSTER_LOC[1]], // --> Default
-  zoom: 11,
-});
-
-// MAP
+// ================================== MAP  ==================================
 const map = new Map({
   target: "map",
   controls: defaultControls().extend([mousePositionControl]),
@@ -413,7 +377,10 @@ const map = new Map({
       }),
     }),
 
-    iconLayer, // Icon Map Layer
+    // Icon GG_Map
+    new VectorLayer({
+      source: iconVectorSource,
+    }),
 
     // Filter Layer
     new WebGLPointsLayer({
@@ -423,7 +390,7 @@ const map = new Map({
     }),
 
     // Cluster
-    clusterHulls,
+    clusterHulls, // line scope
     clusters,
     clusterCircles,
 
@@ -437,10 +404,13 @@ const map = new Map({
       : []),
   ],
 
-  view,
+  view: new View({
+    center: [0, 0], // --> Default
+    zoom: 2,
+  }),
 });
 
-// =========================================== Handle ===========================================
+// ================================= Handle =================================
 // #region Zoom In, Zoom Out
 document.getElementById("zoom-out").onclick = function () {
   const view = map.getView();
@@ -455,80 +425,24 @@ document.getElementById("zoom-in").onclick = function () {
 };
 // #endregion
 
-// #region Get Location
-// const projectionSelect = document.getElementById("projection");
-// projectionSelect.addEventListener("change", function (event) {
-//   mousePositionControl.setProjection(event.target.value);
-// });
+// #region Icon vs Popup info
+const elementPopupIcon = document.getElementById("popupIcon");
 
-// const precisionInput = document.getElementById("precision");
-// precisionInput.addEventListener("change", function (event) {
-//   const format = createStringXY(event.target.valueAsNumber);
-//   mousePositionControl.setCoordinateFormat(format);
-// });
-// #endregion
-
-// #region singleclick Event click handler ->  render the popup.
-map.on("singleclick", function (evt) {
-  const coordinate = evt.coordinate;
-  const hdms = toStringHDMS(toLonLat(coordinate));
-
-  content.innerHTML = `
-    <p style="font-weight: 700">
-      Click Location:
-    </p>
-    <code> ${hdms}</code>
-
-    <code> Latitude: ${JSON.stringify(coordinate[0])}</code>
-    <code> Longitude: ${JSON.stringify(coordinate[1])}</code>
-  `;
-
-  overlay.setPosition(coordinate);
-});
-// #endregion
-
-// #region Icon vs popup info
-const element = document.getElementById("popupIcon");
-
-const popup = new Overlay({
-  element: element,
+const popupIcon = new Overlay({
+  element: elementPopupIcon,
   positioning: "bottom-center",
   stopEvent: false,
 });
-map.addOverlay(popup);
+map.addOverlay(popupIcon);
 
-let popover;
+let popoverIcon;
 function disposePopover() {
-  if (popover) {
-    popover.dispose();
-    popover = undefined;
+  if (popoverIcon) {
+    popoverIcon.dispose();
+    popoverIcon = undefined;
   }
 }
 
-// display popup on click
-// map.on("click", function (evt) {
-//   const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
-//     return feature;
-//   });
-//   disposePopover();
-//   if (!feature) {
-//     return;
-//   }
-//   popup.setPosition(evt.coordinate);
-//   popover = new bootstrap.Popover(element, {
-//     placement: "top",
-//     html: true,
-//     content: feature.get("name"),
-//   });
-//   popover.show();
-// });
-
-// change mouse cursor when over marker
-// map.on("pointermove", function (e) {
-//   const pixel = map.getEventPixel(e.originalEvent);
-//   const hit = map.hasFeatureAtPixel(pixel);
-//   map.getTarget().style.cursor = hit ? "pointer" : "";
-// });
 // Close the popup when the map is moved
 map.on("movestart", disposePopover);
 // #endregion
@@ -576,21 +490,11 @@ function flyTo(location, scale = SCALE_DETAIL, done) {
   );
 }
 
-onClick("goToLotte", function () {
-  flyTo(LOTTE_LOC, SCALE_DETAIL, function () {});
-});
-
-onClick("goToMarriot", function () {
-  flyTo(MARRIOT_LOC, SCALE_DETAIL, function () {});
-});
-
-onClick("goToIcon", function () {
-  flyTo(ICON_LOC, SCALE_DETAIL, function () {});
-});
-
-onClick("goToFilterArea", function () {
-  flyTo(FILTER_LOC, 2, function () {});
-});
+onClick("goToLotte", () => flyTo(LOTTE_LOC, SCALE_DETAIL, function () {}));
+onClick("goToMarriot", () => flyTo(MARRIOT_LOC, SCALE_DETAIL, function () {}));
+onClick("goToIcon", () => flyTo(ICON_LOC, SCALE_DETAIL, function () {}));
+onClick("goToFilterArea", () => flyTo(FILTER_LOC, 2, function () {}));
+onClick("goToCluster", () => flyTo(CLUSTER_LOC, 11, function () {}));
 
 onClick("goToMulty", () => {
   const view = map.getView();
@@ -625,8 +529,9 @@ function animate() {
 animate();
 // #endregion
 
-// #region Cluster
+// #region - Event
 map.on("pointermove", (event) => {
+  // ========================== Cluster ==========================
   clusters.getFeatures(event.pixel).then((features) => {
     if (features[0] !== hoverFeature) {
       // Display the convex hull on hover.
@@ -637,12 +542,14 @@ map.on("pointermove", (event) => {
     }
   });
 
+  // ========================== Change mouse cursor when over marker ==========================
   const pixel = map.getEventPixel(event.originalEvent);
   const hit = map.hasFeatureAtPixel(pixel);
-  map.getTarget().style.cursor = hit ? "pointer" : "";
+  map.getTargetElement().style.cursor = hit ? "pointer" : "";
 });
 
 map.on("click", (event) => {
+  // ===================== Cluster handle when click =====================
   clusters.getFeatures(event.pixel).then((features) => {
     if (features.length > 0) {
       const clusterMembers = features[0].get("features");
@@ -665,6 +572,7 @@ map.on("click", (event) => {
     }
   });
 
+  // ===================== Display popup on click =====================
   const feature = map.forEachFeatureAtPixel(event.pixel, function (feature) {
     return feature;
   });
@@ -672,12 +580,29 @@ map.on("click", (event) => {
   if (!feature) {
     return;
   }
-  popup.setPosition(event.coordinate);
-  popover = new bootstrap.Popover(element, {
+  popupIcon.setPosition(event.coordinate);
+  popoverIcon = new bootstrap.Popover(elementPopupIcon, {
     placement: "top",
     html: true,
     content: feature.get("name"),
   });
-  popover.show();
+  popoverIcon.show();
 });
+
+map.on("singleclick", function (evt) {
+  // =========================== Render the Popup =========================
+  if (!CLICK_SHOW_POPUP) return;
+  const coordinate = evt.coordinate;
+  const hdms = toStringHDMS(toLonLat(coordinate));
+  content.innerHTML = `
+    <p style="font-weight: 700">
+      Click Location:
+    </p>
+    <code> ${hdms}</code>
+    <code> Latitude: ${JSON.stringify(coordinate[0])}</code>
+    <code> Longitude: ${JSON.stringify(coordinate[1])}</code>
+  `;
+  overlay.setPosition(coordinate);
+});
+
 // #endregion

@@ -11,6 +11,10 @@ body {
   clear: both;
   margin-top: 10px;
 }
+.head {
+  display: block;
+  margin-bottom: 5px;
+}
 
 #map {
   width: 100%;
@@ -60,3 +64,20 @@ body {
 .ol-popup-closer:after {
   content: "✖";
 }
+
+/* KML */
+/* #info {
+  position: absolute;
+  height: 1px;
+  width: 1px;
+  z-index: 100;
+}
+.tooltip.in {
+  opacity: 1;
+}
+.tooltip.top .tooltip-arrow {
+  border-top-color: white;
+}
+.tooltip-inner {
+  border: 2px solid white;
+} */
