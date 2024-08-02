@@ -530,6 +530,40 @@ animate();
 // #endregion
 
 // #region - Event
+const info = document.getElementById("info");
+info.style.pointerEvents = "none";
+const tooltip = new bootstrap.Tooltip(info, {
+  animation: false,
+  customClass: "pe-none",
+  offset: [0, 5],
+  title: "-",
+  trigger: "manual",
+});
+
+let currentFeature;
+const displayFeatureInfo = function (pixel, target) {
+  const feature = target.closest(".ol-control")
+    ? undefined
+    : map.forEachFeatureAtPixel(pixel, function (feature) {
+        return feature;
+      });
+  if (feature) {
+    info.style.left = pixel[0] + "px";
+    info.style.top = pixel[1] + "px";
+    if (feature !== currentFeature) {
+      tooltip.setContent({ ".tooltip-inner": feature.get("name") });
+    }
+    if (currentFeature) {
+      tooltip.update();
+    } else {
+      tooltip.show();
+    }
+  } else {
+    tooltip.hide();
+  }
+  currentFeature = feature;
+};
+
 map.on("pointermove", (event) => {
   // ========================== Cluster ==========================
   clusters.getFeatures(event.pixel).then((features) => {
@@ -546,6 +580,14 @@ map.on("pointermove", (event) => {
   const pixel = map.getEventPixel(event.originalEvent);
   const hit = map.hasFeatureAtPixel(pixel);
   map.getTargetElement().style.cursor = hit ? "pointer" : "";
+
+  // ========================== xxxxxx ==========================
+  if (event.dragging) {
+    tooltip.hide();
+    currentFeature = undefined;
+    return;
+  }
+  displayFeatureInfo(pixel, event.originalEvent.target);
 });
 
 map.on("click", (event) => {
@@ -587,6 +629,9 @@ map.on("click", (event) => {
     content: feature.get("name"),
   });
   popoverIcon.show();
+
+  // ========================== xxxxxx ==========================
+  displayFeatureInfo(event.pixel, event.originalEvent.target);
 });
 
 map.on("singleclick", function (evt) {
@@ -603,6 +648,11 @@ map.on("singleclick", function (evt) {
     <code> Longitude: ${JSON.stringify(coordinate[1])}</code>
   `;
   overlay.setPosition(coordinate);
+});
+
+map.getTargetElement().addEventListener("pointerleave", function () {
+  tooltip.hide();
+  currentFeature = undefined;
 });
 
 // #endregion
